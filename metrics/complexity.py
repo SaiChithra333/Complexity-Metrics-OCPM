@@ -228,205 +228,205 @@ class ComplexityMetrics:
     # B) Core metrics 2 & 3 — Interaction-based
     # ─────────────────────────────────────────────────────────────────────
 
-    def shared_activity_ratio(self) -> float:
-        """
-        SAR — Shared Activity Ratio  [core, naturally [0,1]]
-        ======================================================
-        Formula : SAR = |{a ∈ A : |objects(a)| > 1}| / |A|
+    # def shared_activity_ratio(self) -> float:
+    #     """
+    #     SAR — Shared Activity Ratio  [core, naturally [0,1]]
+    #     ======================================================
+    #     Formula : SAR = |{a ∈ A : |objects(a)| > 1}| / |A|
 
-        Meaning : Fraction of activities that touch more than one object type.
-                  Already bounded [0,1] — no further normalisation needed.
-        Returns 0.0 if no activities exist.
-        """
-        if not self.model.activities:
-            return 0.0
-        shared = sum(
-            1 for objs in self.model.activity_to_objects.values()
-            if len(objs) > 1
-        )
-        return round(shared / len(self.model.activities), 4)
+    #     Meaning : Fraction of activities that touch more than one object type.
+    #               Already bounded [0,1] — no further normalisation needed.
+    #     Returns 0.0 if no activities exist.
+    #     """
+    #     if not self.model.activities:
+    #         return 0.0
+    #     shared = sum(
+    #         1 for objs in self.model.activity_to_objects.values()
+    #         if len(objs) > 1
+    #     )
+    #     return round(shared / len(self.model.activities), 4)
 
-    def activity_fan_out(self) -> tuple[float, float]:
-        """
-        AFO — Activity Fan-Out  [core, normalised by OTC]
-        ===================================================
-        Raw formula    : AFO_raw  = (Σ_{a∈A} |objects(a)|) / |A|
-        Normalised     : AFO_norm = AFO_raw / OTC   ∈ [0, 1]
+    # def activity_fan_out(self) -> tuple[float, float]:
+    #     """
+    #     AFO — Activity Fan-Out  [core, normalised by OTC]
+    #     ===================================================
+    #     Raw formula    : AFO_raw  = (Σ_{a∈A} |objects(a)|) / |A|
+    #     Normalised     : AFO_norm = AFO_raw / OTC   ∈ [0, 1]
 
-        Normalisation rationale: the maximum possible fan-out per activity
-        equals OTC (every activity touches every object type), so dividing
-        by OTC maps the raw value to [0, 1].
+    #     Normalisation rationale: the maximum possible fan-out per activity
+    #     equals OTC (every activity touches every object type), so dividing
+    #     by OTC maps the raw value to [0, 1].
 
-        Returns (afo_raw, afo_norm).
-        Returns (0.0, 0.0) if no activities exist.
-        """
-        if not self.model.activities:
-            return 0.0, 0.0
-        total    = sum(len(objs) for objs in self.model.activity_to_objects.values())
-        afo_raw  = round(total / len(self.model.activities), 4)
-        otc_safe = max(len(self.model.objects), 1)
-        afo_norm = round(min(afo_raw / otc_safe, 1.0), 4)
-        return afo_raw, afo_norm
+    #     Returns (afo_raw, afo_norm).
+    #     Returns (0.0, 0.0) if no activities exist.
+    #     """
+    #     if not self.model.activities:
+    #         return 0.0, 0.0
+    #     total    = sum(len(objs) for objs in self.model.activity_to_objects.values())
+    #     afo_raw  = round(total / len(self.model.activities), 4)
+    #     otc_safe = max(len(self.model.objects), 1)
+    #     afo_norm = round(min(afo_raw / otc_safe, 1.0), 4)
+    #     return afo_raw, afo_norm
 
-    # ─────────────────────────────────────────────────────────────────────
-    # C) Core metric 4 — Distribution-aware
-    # ─────────────────────────────────────────────────────────────────────
+    # # ─────────────────────────────────────────────────────────────────────
+    # # C) Core metric 4 — Distribution-aware
+    # # ─────────────────────────────────────────────────────────────────────
 
-    def relation_entropy(self) -> tuple[float, float]:
-        """
-        RE — Relation Entropy  [core, normalised by log2(OTC)]
-        ========================================================
-        Raw formula    : RE_raw  = −Σ p(o)·log2(p(o))
-                         where p(o) = |activities involving o| / |R|
+    # def relation_entropy(self) -> tuple[float, float]:
+    #     """
+    #     RE — Relation Entropy  [core, normalised by log2(OTC)]
+    #     ========================================================
+    #     Raw formula    : RE_raw  = −Σ p(o)·log2(p(o))
+    #                      where p(o) = |activities involving o| / |R|
 
-        Normalised     : RE_norm = RE_raw / log2(OTC)   ∈ [0, 1]
+    #     Normalised     : RE_norm = RE_raw / log2(OTC)   ∈ [0, 1]
 
-        Normalisation rationale: maximum Shannon entropy over OTC outcomes
-        equals log2(OTC) (uniform distribution), so dividing maps RE to [0,1].
+    #     Normalisation rationale: maximum Shannon entropy over OTC outcomes
+    #     equals log2(OTC) (uniform distribution), so dividing maps RE to [0,1].
 
-        Meaning : 0 → all relations concentrate on one object type (maximum skew).
-                  1 → relations distributed perfectly uniformly across all types.
+    #     Meaning : 0 → all relations concentrate on one object type (maximum skew).
+    #               1 → relations distributed perfectly uniformly across all types.
 
-        Returns (re_raw, re_norm).
-        Returns (0.0, 0.0) if no relations exist.
-        """
-        if not self.model.relations:
-            return 0.0, 0.0
+    #     Returns (re_raw, re_norm).
+    #     Returns (0.0, 0.0) if no relations exist.
+    #     """
+    #     if not self.model.relations:
+    #         return 0.0, 0.0
 
-        otc_safe = max(len(self.model.objects), 1)
-        total    = len(self.model.relations)
-        entropy  = 0.0
-        for obj in self.model.objects:
-            count = len(self.model.object_to_activities[obj])
-            if count > 0:
-                p = count / total
-                entropy -= p * math.log2(p)
+    #     otc_safe = max(len(self.model.objects), 1)
+    #     total    = len(self.model.relations)
+    #     entropy  = 0.0
+    #     for obj in self.model.objects:
+    #         count = len(self.model.object_to_activities[obj])
+    #         if count > 0:
+    #             p = count / total
+    #             entropy -= p * math.log2(p)
 
-        re_raw  = round(entropy, 4)
-        re_max  = math.log2(otc_safe) if otc_safe > 1 else 1.0
-        re_norm = round(min(re_raw / re_max, 1.0), 4) if re_max > 0 else 0.0
-        return re_raw, re_norm
+    #     re_raw  = round(entropy, 4)
+    #     re_max  = math.log2(otc_safe) if otc_safe > 1 else 1.0
+    #     re_norm = round(min(re_raw / re_max, 1.0), 4) if re_max > 0 else 0.0
+    #     return re_raw, re_norm
 
-    # ─────────────────────────────────────────────────────────────────────
-    # D) Composite complexity  (4-metric, fully normalised, [0,1])
-    # ─────────────────────────────────────────────────────────────────────
+    # # ─────────────────────────────────────────────────────────────────────
+    # # D) Composite complexity  (4-metric, fully normalised, [0,1])
+    # # ─────────────────────────────────────────────────────────────────────
 
-    def composite_complexity(
-        self,
-        oid:      float,
-        sar:      float,
-        afo_norm: float,
-        re_norm:  float,
-    ) -> float:
-        """
-        C(G) — Composite Complexity Score  [0, 1]
-        ==========================================
-        Formula : C(G) = w_oid·OID + w_sar·SAR + w_afo·AFO_norm + w_re·RE_norm
+    # def composite_complexity(
+    #     self,
+    #     oid:      float,
+    #     sar:      float,
+    #     afo_norm: float,
+    #     re_norm:  float,
+    # ) -> float:
+    #     """
+    #     C(G) — Composite Complexity Score  [0, 1]
+    #     ==========================================
+    #     Formula : C(G) = w_oid·OID + w_sar·SAR + w_afo·AFO_norm + w_re·RE_norm
 
-        All four inputs are normalised to [0, 1], so C(G) ∈ [0, 1].
-        Default weights are equal (0.25 each).
+    #     All four inputs are normalised to [0, 1], so C(G) ∈ [0, 1].
+    #     Default weights are equal (0.25 each).
 
-        Metric roles
-        ------------
-          OID      — structural density  (graph-level: how connected?)
-          SAR      — interaction breadth (activity-level: how shared?)
-          AFO_norm — interaction depth   (per-activity load: how heavy?)
-          RE_norm  — distribution balance(entropy-level: how balanced?)
+    #     Metric roles
+    #     ------------
+    #       OID      — structural density  (graph-level: how connected?)
+    #       SAR      — interaction breadth (activity-level: how shared?)
+    #       AFO_norm — interaction depth   (per-activity load: how heavy?)
+    #       RE_norm  — distribution balance(entropy-level: how balanced?)
 
-        Parameters
-        ----------
-        oid, sar, afo_norm, re_norm : float  — pre-normalised [0,1] values
-        """
-        w = self.weights
-        score = (
-            w["w_oid"] * oid
-            + w["w_sar"] * sar
-            + w["w_afo"] * afo_norm
-            + w["w_re"]  * re_norm
-        )
-        return round(min(score, 1.0), 4)
+    #     Parameters
+    #     ----------
+    #     oid, sar, afo_norm, re_norm : float  — pre-normalised [0,1] values
+    #     """
+    #     w = self.weights
+    #     score = (
+    #         w["w_oid"] * oid
+    #         + w["w_sar"] * sar
+    #         + w["w_afo"] * afo_norm
+    #         + w["w_re"]  * re_norm
+    #     )
+    #     return round(min(score, 1.0), 4)
 
-    # ─────────────────────────────────────────────────────────────────────
-    # E) Diagnostic / optional metrics
-    # ─────────────────────────────────────────────────────────────────────
+    # # ─────────────────────────────────────────────────────────────────────
+    # # E) Diagnostic / optional metrics
+    # # ─────────────────────────────────────────────────────────────────────
 
-    def object_isolation_index(self) -> float:
-        """
-        OII — Object Isolation Index  [diagnostic]
-        ============================================
-        Formula : OII = |{o ∈ O : o appears in no relation}| / |O|
-        Proportion of declared object types never referenced by any activity.
-        Returns 0.0 if no objects are declared.
-        """
-        if not self.model.objects:
-            return 0.0
-        isolated = sum(
-            1 for o in self.model.objects
-            if len(self.model.object_to_activities[o]) == 0
-        )
-        return round(isolated / len(self.model.objects), 4)
+    # def object_isolation_index(self) -> float:
+    #     """
+    #     OII — Object Isolation Index  [diagnostic]
+    #     ============================================
+    #     Formula : OII = |{o ∈ O : o appears in no relation}| / |O|
+    #     Proportion of declared object types never referenced by any activity.
+    #     Returns 0.0 if no objects are declared.
+    #     """
+    #     if not self.model.objects:
+    #         return 0.0
+    #     isolated = sum(
+    #         1 for o in self.model.objects
+    #         if len(self.model.object_to_activities[o]) == 0
+    #     )
+    #     return round(isolated / len(self.model.objects), 4)
 
-    def interaction_graph_diameter(self) -> float:
-        """
-        DIAM — Interaction Graph Diameter  [diagnostic]
-        =================================================
-        Longest shortest path in the object interaction graph.
-        Computed on the largest connected component when disconnected.
-        Returns 0.0 if fewer than 2 nodes.
-        """
-        G = self.model.interaction_graph
-        if G.number_of_nodes() < 2:
-            return 0.0
-        if not nx.is_connected(G):
-            largest = max(nx.connected_components(G), key=len)
-            G_sub   = G.subgraph(largest)
-            if G_sub.number_of_nodes() < 2:
-                return 0.0
-            return float(nx.diameter(G_sub))
-        return float(nx.diameter(G))
+    # def interaction_graph_diameter(self) -> float:
+    #     """
+    #     DIAM — Interaction Graph Diameter  [diagnostic]
+    #     =================================================
+    #     Longest shortest path in the object interaction graph.
+    #     Computed on the largest connected component when disconnected.
+    #     Returns 0.0 if fewer than 2 nodes.
+    #     """
+    #     G = self.model.interaction_graph
+    #     if G.number_of_nodes() < 2:
+    #         return 0.0
+    #     if not nx.is_connected(G):
+    #         largest = max(nx.connected_components(G), key=len)
+    #         G_sub   = G.subgraph(largest)
+    #         if G_sub.number_of_nodes() < 2:
+    #             return 0.0
+    #         return float(nx.diameter(G_sub))
+    #     return float(nx.diameter(G))
 
-    # ─────────────────────────────────────────────────────────────────────
-    # Master compute method
-    # ─────────────────────────────────────────────────────────────────────
+    # # ─────────────────────────────────────────────────────────────────────
+    # # Master compute method
+    # # ─────────────────────────────────────────────────────────────────────
 
-    def compute_all(self) -> MetricResult:
-        """
-        Compute every metric and return a MetricResult instance.
+    # def compute_all(self) -> MetricResult:
+    #     """
+    #     Compute every metric and return a MetricResult instance.
 
-        Composite C(G) = mean(OID, SAR, AFO_norm, RE_norm)  ∈ [0, 1].
-        """
-        # Informational
-        otc  = self.object_type_count()
-        aorc = self.activity_object_relation_count()
-        oc   = self.object_coupling()
+    #     Composite C(G) = mean(OID, SAR, AFO_norm, RE_norm)  ∈ [0, 1].
+    #     """
+    #     # Informational
+    #     otc  = self.object_type_count()
+    #     aorc = self.activity_object_relation_count()
+    #     oc   = self.object_coupling()
 
-        # Core
-        oid              = self.object_interaction_density()
-        sar              = self.shared_activity_ratio()
-        afo_raw, afo_norm = self.activity_fan_out()
-        re_raw,  re_norm  = self.relation_entropy()
+    #     # Core
+    #     oid              = self.object_interaction_density()
+    #     sar              = self.shared_activity_ratio()
+    #     afo_raw, afo_norm = self.activity_fan_out()
+    #     re_raw,  re_norm  = self.relation_entropy()
 
-        # Composite — all inputs already [0,1]
-        comp = self.composite_complexity(oid, sar, afo_norm, re_norm)
+    #     # Composite — all inputs already [0,1]
+    #     comp = self.composite_complexity(oid, sar, afo_norm, re_norm)
 
-        # Diagnostic
-        oii  = self.object_isolation_index()
-        diam = self.interaction_graph_diameter()
+    #     # Diagnostic
+    #     oii  = self.object_isolation_index()
+    #     diam = self.interaction_graph_diameter()
 
-        return MetricResult(
-            model_name = self.model.name,
-            # informational
-            otc=otc, aorc=aorc, oc=oc,
-            # core raw
-            oid=oid, sar=sar, afo=afo_raw, re=re_raw,
-            # core normalised
-            afo_norm=afo_norm, re_norm=re_norm,
-            # composite
-            composite=comp,
-            # diagnostic
-            oii=oii, diam=diam,
-            weights=self.weights.copy(),
-        )
+    #     return MetricResult(
+    #         model_name = self.model.name,
+    #         # informational
+    #         otc=otc, aorc=aorc, oc=oc,
+    #         # core raw
+    #         oid=oid, sar=sar, afo=afo_raw, re=re_raw,
+    #         # core normalised
+    #         afo_norm=afo_norm, re_norm=re_norm,
+    #         # composite
+    #         composite=comp,
+    #         # diagnostic
+    #         oii=oii, diam=diam,
+    #         weights=self.weights.copy(),
+    #     )
 
     # ─────────────────────────────────────────────────────────────────────
     # Pretty-print report
