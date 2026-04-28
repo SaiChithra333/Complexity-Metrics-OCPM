@@ -126,6 +126,16 @@ pip install -r requirements.txt
 
 ### Quick Start — Single Model Analysis
 
+### Main Command
+### Real-World Data Analysis
+
+Analyze real-world datasets:
+
+```bash
+python real_world_runner.py
+```
+### Extra (To Understand the better)
+
 Run the main demo to analyze pre-defined OCPN models:
 
 ```bash
@@ -154,14 +164,6 @@ This includes four demonstrations:
 2. **E-Commerce log** - Realistic noisy log with full report
 3. **Hospital CSV data** - CSV processing with activity frequency filtering
 4. **Logistics OCEL JSON** - Multi-dataset comparison with dashboards
-
-### Real-World Data Analysis
-
-Analyze real-world datasets:
-
-```bash
-python real_world_runner.py
-```
 
 ## Usage Examples
 
